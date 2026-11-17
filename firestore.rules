@@ -1,0 +1,147 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened global helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidExam(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 150 &&
+             data.subject is string && data.subject.size() <= 100 &&
+             (!('classGroup' in data) || (data.classGroup is string && data.classGroup.size() <= 100)) &&
+             data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 120 &&
+             (data.maxScore is int || data.maxScore is float) && data.maxScore > 0 && data.maxScore <= 1000 &&
+             data.answerKey is list && data.answerKey.size() == data.totalQuestions &&
+             data.answerKey.size() >= 1 && data.answerKey.size() <= 120 &&
+             (data.answerKey.size() == 0 || data.answerKey[0] is string) &&
+             (!('examCodes' in data) || data.examCodes is map) &&
+             data.submissionCount is int && data.submissionCount >= 0 && data.submissionCount <= 100000;
+    }
+
+    function isValidSubmission(data, userId, examId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.examId is string &&
+             data.examId == examId &&
+             data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 120 &&
+             data.studentCode is string && data.studentCode.size() <= 40 &&
+             (!('examCode' in data) || (data.examCode is string && data.examCode.size() <= 30)) &&
+             (!('imagePath' in data) || (data.imagePath is string && data.imagePath.size() <= 500)) &&
+             (!('feedbackNote' in data) || (data.feedbackNote is string && data.feedbackNote.size() <= 1000)) &&
+             data.studentAnswers is list && data.studentAnswers.size() >= 1 && data.studentAnswers.size() <= 120 &&
+             (data.studentAnswers.size() == 0 || data.studentAnswers[0] is string) &&
+             data.correctCount is int && data.correctCount >= 0 && data.correctCount <= 120 &&
+             data.wrongCount is int && data.wrongCount >= 0 && data.wrongCount <= 120 &&
+             data.blankCount is int && data.blankCount >= 0 && data.blankCount <= 120 &&
+             (data.correctCount + data.wrongCount + data.blankCount) == data.studentAnswers.size() &&
+             (data.score is int || data.score is float) && data.score >= 0 && data.score <= 1000 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    match /users/{userId}/exams/{examId} {
+      allow get: if isOwner(userId) && isValidId(examId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(examId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'title', 'subject', 'totalQuestions',
+                         'maxScore', 'answerKey', 'submissionCount',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'title', 'subject', 'classGroup', 'totalQuestions',
+                         'maxScore', 'answerKey', 'examCodes', 'submissionCount',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidExam(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(examId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidExam(incoming(), userId) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'subject', 'classGroup', 'totalQuestions', 'maxScore',
+                           'answerKey', 'examCodes', 'submissionCount', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(examId);
+
+      match /submissions/{submissionId} {
+        allow get: if isOwner(userId) && isValidId(examId) && isValidId(submissionId);
+        allow list: if isOwner(userId) && isValidId(examId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(examId) &&
+                         isValidId(submissionId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'examId', 'studentName', 'studentCode',
+                           'studentAnswers', 'correctCount', 'wrongCount',
+                           'blankCount', 'score', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'examId', 'studentName', 'studentCode',
+                           'examCode', 'imagePath', 'feedbackNote',
+                           'studentAnswers', 'correctCount', 'wrongCount',
+                           'blankCount', 'score', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidTimestamp(incoming().createdAt) &&
+                         isValidTimestamp(incoming().updatedAt) &&
+                         isValidSubmission(incoming(), userId, examId) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/exams/$(examId));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(examId) &&
+                         isValidId(submissionId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().examId == existing().examId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTimestamp(incoming().updatedAt) &&
+                         isValidSubmission(incoming(), userId, examId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'studentName', 'studentCode', 'examCode', 'imagePath', 'feedbackNote',
+                           'studentAnswers', 'correctCount', 'wrongCount', 'blankCount',
+                           'score', 'notes', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(examId) && isValidId(submissionId);
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Chấm Thi AI",
+  "description": "Ứng dụng chấm bài kiểm tra trắc nghiệm A, B, C, D bằng AI đa mã đề, in phiếu trả lời Word (.docx), tạo slide chữa bài PowerPoint (.pptx), thống kê phổ điểm & xuất bảng điểm Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

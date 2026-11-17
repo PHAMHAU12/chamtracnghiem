@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path
+        name="cache_root"
+        path="." />
+    <cache-path
+        name="exports"
+        path="exports/" />
+    <cache-path
+        name="scans"
+        path="scans/" />
+    <cache-path
+        name="docx_templates"
+        path="docx_templates/" />
+    <cache-path
+        name="docx_reports"
+        path="docx_reports/" />
+    <cache-path
+        name="pptx_exports"
+        path="pptx_exports/" />
+    <cache-path
+        name="moodle_exports"
+        path="moodle_exports/" />
+    <files-path
+        name="files_root"
+        path="." />
+    <external-cache-path
+        name="ext_cache"
+        path="." />
+</paths>

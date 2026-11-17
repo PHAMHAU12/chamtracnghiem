@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Chấm Thi AI</string>
+    <string name="sign_in_google">Đăng nhập bằng Google</string>
+    <string name="sign_out">Đăng xuất</string>
+    <string name="create_exam">Tạo đề thi mới</string>
+    <string name="scan_answer_sheet">Chấm phiếu trả lời</string>
+    <string name="export_excel">Xuất bảng điểm Excel</string>
+    <string name="camera_permission_rationale">Ứng dụng cần quyền Camera để chụp ảnh phiếu trả lời trắc nghiệm.</string>
+</resources>

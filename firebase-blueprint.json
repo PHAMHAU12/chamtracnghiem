@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "Exam": {
+      "title": "Exam",
+      "description": "A multiple-choice exam template with answer key and scoring scale created by a teacher.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated teacher UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Exam title (e.g., Kiểm tra giữa kỳ Toán 10)"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject or class name"
+        },
+        "totalQuestions": {
+          "type": "integer",
+          "description": "Number of multiple-choice questions (1-120)"
+        },
+        "maxScore": {
+          "type": "number",
+          "description": "Maximum score scale (e.g., 10.0 or 100.0)"
+        },
+        "answerKey": {
+          "type": "array",
+          "description": "Ordered list of correct answers (A, B, C, or D)"
+        },
+        "submissionCount": {
+          "type": "integer",
+          "description": "Cached count of graded submissions"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when exam was created (FieldValue.serverTimestamp())"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when exam was last updated (FieldValue.serverTimestamp())"
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "subject",
+        "totalQuestions",
+        "maxScore",
+        "answerKey",
+        "submissionCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "A graded student multiple-choice answer sheet scanned and analyzed by AI.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated teacher UID"
+        },
+        "examId": {
+          "type": "string",
+          "description": "Parent exam document ID"
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Student full name recognized from sheet or entered manually"
+        },
+        "studentCode": {
+          "type": "string",
+          "description": "Student ID or exam roll number (SBD)"
+        },
+        "studentAnswers": {
+          "type": "array",
+          "description": "Ordered list of recognized student choices (A, B, C, D, BLANK, or MULTIPLE)"
+        },
+        "correctCount": {
+          "type": "integer",
+          "description": "Number of correct answers"
+        },
+        "wrongCount": {
+          "type": "integer",
+          "description": "Number of wrong answers"
+        },
+        "blankCount": {
+          "type": "integer",
+          "description": "Number of unanswered or invalid answers"
+        },
+        "score": {
+          "type": "number",
+          "description": "Calculated score on the exam scale"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional AI confidence note or teacher remark"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when graded (FieldValue.serverTimestamp())"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last edited (FieldValue.serverTimestamp())"
+        }
+      },
+      "required": [
+        "userId",
+        "examId",
+        "studentName",
+        "studentCode",
+        "studentAnswers",
+        "correctCount",
+        "wrongCount",
+        "blankCount",
+        "score",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/exams/{examId}": {
+      "schema": { "$ref": "#/entities/Exam" },
+      "description": "Exams and answer keys owned by the authenticated teacher."
+    },
+    "/users/{userId}/exams/{examId}/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/Submission" },
+      "description": "Graded student answer sheets belonging to a specific exam."
+    }
+  }
+}
